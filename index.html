@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PIXEL — Digital Products Store</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://js.stripe.com/v3/"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #0d0c0a;
+    --ink-muted: #6b6860;
+    --ink-faint: #c9c7c0;
+    --paper: #faf9f6;
+    --paper-raised: #ffffff;
+    --paper-warm: #f3f0e8;
+    --accent: #c8401a;
+    --accent-light: #fde8e1;
+    --accent-dark: #8f2d12;
+    --gold: #b8860b;
+    --border: rgba(13,12,10,0.12);
+    --border-strong: rgba(13,12,10,0.25);
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    --font-serif: 'DM Serif Display', Georgia, serif;
+    --font-sans: 'Instrument Sans', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+    --shadow-sm: 0 1px 3px rgba(13,12,10,0.08), 0 1px 2px rgba(13,12,10,0.05);
+    --shadow-md: 0 4px 12px rgba(13,12,10,0.10), 0 2px 6px rgba(13,12,10,0.06);
+    --shadow-lg: 0 16px 40px rgba(13,12,10,0.14), 0 4px 12px rgba(13,12,10,0.08);
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* ─── NAV ─────────────────────────────── */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(250,249,246,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 60px;
+  }
+  .nav-logo {
+    font-family: var(--font-serif); font-size: 22px; color: var(--ink); text-decoration: none;
+    letter-spacing: -0.02em;
+  }
+  .nav-logo span { color: var(--accent); }
+  .nav-links { display: flex; align-items: center; gap: 2rem; }
+  .nav-links a { font-size: 14px; color: var(--ink-muted); text-decoration: none; font-weight: 500; transition: color 0.15s; }
+  .nav-links a:hover { color: var(--ink); }
+  .nav-cta {
+    font-size: 13px; font-weight: 500; font-family: var(--font-sans);
+    background: var(--ink); color: var(--paper); border: none; cursor: pointer;
+    padding: 8px 18px; border-radius: var(--radius-md);
+    transition: background 0.15s, transform 0.1s;
+  }
+  .nav-cta:hover { background: var(--accent); }
+
+  /* ─── HERO ────────────────────────────── */
+  .hero {
+    max-width: 1120px; margin: 0 auto; padding: 80px 2rem 60px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center;
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--accent-light); color: var(--accent-dark);
+    font-size: 12px; font-weight: 500; font-family: var(--font-mono);
+    padding: 5px 12px; border-radius: 100px; margin-bottom: 20px;
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .hero-badge::before { content: '●'; font-size: 8px; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  h1 {
+    font-family: var(--font-serif); font-size: clamp(40px, 5vw, 64px);
+    line-height: 1.05; letter-spacing: -0.03em; color: var(--ink); margin-bottom: 20px;
+  }
+  h1 em { font-style: italic; color: var(--accent); }
+  .hero-desc { font-size: 17px; color: var(--ink-muted); max-width: 440px; line-height: 1.65; margin-bottom: 32px; }
+  .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn-primary {
+    background: var(--accent); color: #fff; border: none; cursor: pointer;
+    padding: 13px 28px; border-radius: var(--radius-md); font-size: 15px; font-weight: 600;
+    font-family: var(--font-sans); transition: background 0.15s, transform 0.1s;
+    text-decoration: none; display: inline-block;
+  }
+  .btn-primary:hover { background: var(--accent-dark); transform: translateY(-1px); }
+  .btn-secondary {
+    background: transparent; color: var(--ink); border: 1.5px solid var(--border-strong);
+    cursor: pointer; padding: 12px 24px; border-radius: var(--radius-md);
+    font-size: 15px; font-weight: 500; font-family: var(--font-sans);
+    transition: border-color 0.15s, background 0.15s; text-decoration: none; display: inline-block;
+  }
+  .btn-secondary:hover { border-color: var(--ink); background: rgba(13,12,10,0.04); }
+  .hero-stats {
+    display: flex; gap: 28px; margin-top: 36px; padding-top: 28px;
+    border-top: 1px solid var(--border);
+  }
+  .stat-num { font-family: var(--font-serif); font-size: 28px; color: var(--ink); display: block; }
+  .stat-label { font-size: 12px; color: var(--ink-muted); font-family: var(--font-mono); letter-spacing: 0.04em; text-transform: uppercase; }
+
+  /* Hero visual */
+  .hero-visual {
+    background: var(--paper-warm); border-radius: var(--radius-xl);
+    border: 1px solid var(--border); padding: 28px;
+    box-shadow: var(--shadow-lg); position: relative; overflow: hidden;
+  }
+  .hero-visual::before {
+    content: ''; position: absolute; top: -40px; right: -40px;
+    width: 200px; height: 200px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(200,64,26,0.08), transparent 70%);
+  }
+  .mini-product { background: var(--paper-raised); border-radius: var(--radius-md); border: 1px solid var(--border); padding: 16px; margin-bottom: 12px; display: flex; gap: 14px; align-items: center; transition: box-shadow 0.2s; cursor: pointer; }
+  .mini-product:hover { box-shadow: var(--shadow-md); }
+  .mini-product:last-child { margin-bottom: 0; }
+  .mini-thumb {
+    width: 52px; height: 52px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;
+  }
+  .mini-product-info { flex: 1; }
+  .mini-product-name { font-weight: 600; font-size: 14px; }
+  .mini-product-cat { font-size: 12px; color: var(--ink-muted); font-family: var(--font-mono); }
+  .mini-price { font-family: var(--font-serif); font-size: 18px; color: var(--accent); }
+
+  /* ─── PRODUCTS ────────────────────────── */
+  .section { max-width: 1120px; margin: 0 auto; padding: 60px 2rem; }
+  .section-header { margin-bottom: 40px; }
+  .section-label { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); margin-bottom: 10px; }
+  .section-title { font-family: var(--font-serif); font-size: clamp(28px, 3.5vw, 42px); line-height: 1.1; letter-spacing: -0.02em; }
+  .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 32px; }
+  .filter-btn {
+    padding: 7px 16px; border-radius: 100px; border: 1px solid var(--border);
+    font-size: 13px; font-weight: 500; background: transparent; cursor: pointer;
+    color: var(--ink-muted); transition: all 0.15s; font-family: var(--font-sans);
+  }
+  .filter-btn.active, .filter-btn:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+  .products-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px;
+  }
+  .product-card {
+    background: var(--paper-raised); border-radius: var(--radius-lg);
+    border: 1px solid var(--border); overflow: hidden;
+    transition: box-shadow 0.2s, transform 0.2s; cursor: pointer;
+  }
+  .product-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-3px); }
+  .product-thumb {
+    width: 100%; height: 200px; display: flex; align-items: center;
+    justify-content: center; font-size: 64px; position: relative;
+  }
+  .product-badge {
+    position: absolute; top: 14px; left: 14px;
+    background: var(--ink); color: var(--paper);
+    font-size: 11px; font-weight: 500; font-family: var(--font-mono);
+    padding: 3px 8px; border-radius: 100px; letter-spacing: 0.04em;
+  }
+  .product-badge.sale { background: var(--accent); }
+  .product-badge.new { background: #2a7a3b; }
+  .product-body { padding: 20px; }
+  .product-category { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-muted); margin-bottom: 6px; }
+  .product-name { font-family: var(--font-serif); font-size: 20px; letter-spacing: -0.02em; margin-bottom: 8px; }
+  .product-desc { font-size: 14px; color: var(--ink-muted); line-height: 1.55; margin-bottom: 16px; }
+  .product-footer { display: flex; align-items: center; justify-content: space-between; }
+  .product-price { font-family: var(--font-serif); font-size: 24px; color: var(--ink); }
+  .product-price .original { font-size: 15px; color: var(--ink-faint); text-decoration: line-through; margin-right: 6px; font-family: var(--font-sans); }
+  .add-btn {
+    background: var(--accent); color: #fff; border: none; cursor: pointer;
+    padding: 9px 20px; border-radius: var(--radius-md); font-size: 14px; font-weight: 600;
+    font-family: var(--font-sans); transition: background 0.15s;
+  }
+  .add-btn:hover { background: var(--accent-dark); }
+
+  /* ─── PRICING ─────────────────────────── */
+  .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .pricing-card {
+    background: var(--paper-raised); border-radius: var(--radius-lg);
+    border: 1px solid var(--border); padding: 28px 24px; position: relative;
+  }
+  .pricing-card.featured {
+    border: 2px solid var(--accent); background: var(--ink);
+    color: var(--paper);
+  }
+  .pricing-card.featured .plan-desc, .pricing-card.featured .feature-item { color: rgba(250,249,246,0.65); }
+  .pricing-card.featured .plan-price { color: var(--paper); }
+  .pricing-badge {
+    position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
+    background: var(--accent); color: #fff; font-size: 11px; font-weight: 600;
+    font-family: var(--font-mono); padding: 3px 14px; border-radius: 100px; white-space: nowrap;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .plan-name { font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); margin-bottom: 8px; }
+  .pricing-card.featured .plan-name { color: rgba(200,64,26,0.85); }
+  .plan-price { font-family: var(--font-serif); font-size: 48px; letter-spacing: -0.03em; margin-bottom: 4px; }
+  .plan-price sup { font-size: 22px; vertical-align: super; }
+  .plan-period { font-size: 14px; color: var(--ink-muted); margin-bottom: 16px; }
+  .plan-desc { font-size: 14px; color: var(--ink-muted); margin-bottom: 20px; line-height: 1.5; }
+  .features-list { list-style: none; margin-bottom: 24px; display: flex; flex-direction: column; gap: 10px; }
+  .feature-item { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--ink-muted); }
+  .feature-icon { width: 18px; height: 18px; border-radius: 50%; background: rgba(42,122,59,0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 10px; }
+  .pricing-card.featured .feature-icon { background: rgba(200,64,26,0.2); }
+  .plan-btn {
+    width: 100%; padding: 12px; border-radius: var(--radius-md); font-size: 15px; font-weight: 600;
+    font-family: var(--font-sans); cursor: pointer; border: 1.5px solid var(--border-strong);
+    background: transparent; color: var(--ink); transition: all 0.15s;
+  }
+  .plan-btn:hover { border-color: var(--ink); background: rgba(13,12,10,0.04); }
+  .pricing-card.featured .plan-btn { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .pricing-card.featured .plan-btn:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+
+  /* ─── PAYMENT MODAL ───────────────────── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(13,12,10,0.6);
+    display: none; align-items: center; justify-content: center;
+    z-index: 1000; padding: 20px;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--paper-raised); border-radius: var(--radius-xl);
+    width: 100%; max-width: 480px; overflow: hidden;
+    box-shadow: var(--shadow-lg); animation: slideUp 0.25s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal-header {
+    padding: 24px 28px 0; display: flex; align-items: flex-start; justify-content: space-between;
+  }
+  .modal-title { font-family: var(--font-serif); font-size: 24px; letter-spacing: -0.02em; }
+  .modal-close {
+    width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border);
+    background: none; cursor: pointer; font-size: 18px; display: flex; align-items: center;
+    justify-content: center; color: var(--ink-muted); transition: all 0.15s; flex-shrink: 0;
+  }
+  .modal-close:hover { background: var(--paper-warm); color: var(--ink); }
+  .modal-body { padding: 20px 28px 28px; }
+
+  /* Order summary */
+  .order-summary {
+    background: var(--paper-warm); border-radius: var(--radius-md);
+    border: 1px solid var(--border); padding: 16px; margin-bottom: 24px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .order-thumb { width: 48px; height: 48px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 24px; }
+  .order-name { font-weight: 600; font-size: 15px; }
+  .order-type { font-size: 12px; color: var(--ink-muted); font-family: var(--font-mono); }
+  .order-price { margin-left: auto; font-family: var(--font-serif); font-size: 22px; color: var(--accent); }
+
+  /* Form fields */
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .form-field { margin-bottom: 14px; }
+  .form-field label { display: block; font-size: 12px; font-weight: 500; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-muted); margin-bottom: 7px; }
+  .form-field input, .form-field select {
+    width: 100%; padding: 11px 14px; border-radius: var(--radius-md);
+    border: 1.5px solid var(--border); background: var(--paper-raised);
+    font-size: 15px; color: var(--ink); font-family: var(--font-sans);
+    transition: border-color 0.15s; outline: none;
+  }
+  .form-field input:focus, .form-field select:focus { border-color: var(--accent); }
+
+  /* Stripe card element */
+  #card-element {
+    padding: 12px 14px; border-radius: var(--radius-md);
+    border: 1.5px solid var(--border); background: var(--paper-raised);
+    transition: border-color 0.15s;
+  }
+  #card-element.StripeElement--focus { border-color: var(--accent); }
+
+  .card-icons { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; }
+  .card-icon {
+    padding: 3px 7px; border-radius: 4px; border: 1px solid var(--border);
+    font-size: 10px; font-weight: 600; font-family: var(--font-mono); color: var(--ink-muted);
+  }
+  .card-icon.visa { color: #1a1f71; background: #f0f0ff; border-color: #c8cadd; }
+  .card-icon.mc { color: #eb001b; }
+  .card-icon.amex { color: #007bc1; }
+
+  .pay-btn {
+    width: 100%; padding: 14px; background: var(--accent); color: #fff; border: none;
+    border-radius: var(--radius-md); font-size: 16px; font-weight: 600;
+    font-family: var(--font-sans); cursor: pointer; margin-top: 18px;
+    transition: background 0.15s; position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .pay-btn:hover { background: var(--accent-dark); }
+  .pay-btn:disabled { background: var(--ink-muted); cursor: not-allowed; }
+  .pay-btn .lock { font-size: 14px; }
+
+  .secure-note {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    font-size: 12px; color: var(--ink-muted); margin-top: 12px;
+    font-family: var(--font-mono);
+  }
+  .secure-note::before { content: '🔒'; font-size: 11px; }
+
+  /* RevenueCat section */
+  .rc-badge {
+    display: flex; align-items: center; gap: 8px;
+    background: linear-gradient(135deg, #f8f4ff, #f0e8ff);
+    border: 1px solid #d4b8ff; border-radius: var(--radius-md);
+    padding: 10px 14px; margin-bottom: 16px; font-size: 12px; color: #6320cc;
+    font-family: var(--font-mono);
+  }
+  .rc-dot { width: 8px; height: 8px; border-radius: 50%; background: #8b5cf6; }
+
+  /* Divider */
+  .divider { display: flex; align-items: center; gap: 12px; margin: 16px 0; }
+  .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .divider span { font-size: 12px; color: var(--ink-muted); font-family: var(--font-mono); }
+
+  /* ─── SUCCESS ─────────────────────────── */
+  .success-screen { text-align: center; padding: 20px 0; }
+  .success-icon { font-size: 56px; margin-bottom: 16px; animation: bounce 0.5s ease; }
+  @keyframes bounce { 0%{transform:scale(0)} 70%{transform:scale(1.2)} 100%{transform:scale(1)} }
+  .success-title { font-family: var(--font-serif); font-size: 28px; letter-spacing: -0.02em; margin-bottom: 8px; }
+  .success-desc { font-size: 15px; color: var(--ink-muted); margin-bottom: 20px; }
+  .download-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--ink); color: var(--paper); padding: 12px 24px;
+    border-radius: var(--radius-md); font-size: 14px; font-weight: 600;
+    font-family: var(--font-sans); text-decoration: none; cursor: pointer; border: none;
+    transition: background 0.15s;
+  }
+  .download-btn:hover { background: var(--accent); }
+
+  /* ─── REVENUECAT DASHBOARD ────────────── */
+  .rc-section { background: var(--ink); color: var(--paper); padding: 64px 2rem; }
+  .rc-inner { max-width: 1120px; margin: 0 auto; }
+  .rc-header { display: flex; align-items: center; gap: 16px; margin-bottom: 40px; }
+  .rc-logo {
+    background: #8b5cf6; color: #fff; padding: 8px 14px; border-radius: var(--radius-md);
+    font-size: 13px; font-weight: 700; font-family: var(--font-mono); letter-spacing: 0.06em;
+  }
+  .rc-title { font-family: var(--font-serif); font-size: 32px; color: var(--paper); }
+  .rc-subtitle { font-size: 15px; color: rgba(250,249,246,0.55); margin-top: 4px; }
+  .rc-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+  .rc-metric {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius-md); padding: 20px;
+  }
+  .rc-metric-label { font-size: 11px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; color: rgba(250,249,246,0.45); margin-bottom: 8px; }
+  .rc-metric-value { font-family: var(--font-serif); font-size: 32px; color: var(--paper); }
+  .rc-metric-change { font-size: 12px; color: #6ee7a0; margin-top: 4px; font-family: var(--font-mono); }
+  .rc-metric-change.down { color: #fca5a5; }
+  .rc-chart-row { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+  .rc-chart-card {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius-md); padding: 20px;
+  }
+  .rc-chart-title { font-size: 13px; font-family: var(--font-mono); color: rgba(250,249,246,0.55); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 80px; }
+  .bar { flex: 1; background: rgba(139,92,246,0.5); border-radius: 3px 3px 0 0; transition: background 0.2s; cursor: pointer; }
+  .bar:hover { background: rgba(139,92,246,0.9); }
+  .platform-list { display: flex; flex-direction: column; gap: 12px; }
+  .platform-item { display: flex; align-items: center; gap: 10px; }
+  .platform-name { font-size: 13px; color: rgba(250,249,246,0.7); min-width: 50px; font-family: var(--font-mono); }
+  .platform-bar-wrap { flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+  .platform-bar { height: 100%; border-radius: 3px; background: #8b5cf6; }
+  .platform-pct { font-size: 12px; color: rgba(250,249,246,0.5); font-family: var(--font-mono); min-width: 34px; text-align: right; }
+
+  /* ─── FOOTER ──────────────────────────── */
+  footer {
+    border-top: 1px solid var(--border); padding: 32px 2rem;
+    max-width: 1120px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 13px; color: var(--ink-muted);
+  }
+  footer a { color: var(--ink-muted); text-decoration: none; }
+  footer a:hover { color: var(--ink); }
+  .footer-links { display: flex; gap: 20px; }
+
+  /* ─── CART FLOAT ──────────────────────── */
+  .cart-float {
+    position: fixed; bottom: 24px; right: 24px; z-index: 200;
+    background: var(--ink); color: var(--paper);
+    border-radius: 100px; padding: 12px 20px;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: var(--shadow-lg); cursor: pointer;
+    transition: transform 0.2s, background 0.15s; font-family: var(--font-sans);
+    font-size: 14px; font-weight: 600; border: none;
+    transform: translateY(80px); opacity: 0;
+  }
+  .cart-float.visible { transform: translateY(0); opacity: 1; }
+  .cart-float:hover { background: var(--accent); }
+  .cart-count {
+    background: var(--accent); color: #fff; border-radius: 50%;
+    width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+  }
+
+  /* ─── RESPONSIVE ──────────────────────── */
+  @media (max-width: 768px) {
+    .hero { grid-template-columns: 1fr; padding: 40px 1.5rem; gap: 2rem; }
+    .hero-visual { display: none; }
+    .pricing-grid { grid-template-columns: 1fr; }
+    .rc-metrics { grid-template-columns: repeat(2, 1fr); }
+    .rc-chart-row { grid-template-columns: 1fr; }
+    nav { padding: 0 1.5rem; }
+    .nav-links { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">pix<span>●</span>l</a>
+  <div class="nav-links">
+    <a href="#products">Products</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#dashboard">Dashboard</a>
+  </div>
+  <button class="nav-cta" onclick="scrollToProducts()">Browse Store →</button>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div>
+    <div class="hero-badge">Now live · 2,400+ customers</div>
+    <h1>Sell your digital <em>products</em> with ease.</h1>
+    <p class="hero-desc">A beautiful storefront powered by Stripe payments and RevenueCat subscriptions. Templates, courses, software, and more — all in one place.</p>
+    <div class="hero-actions">
+      <a href="#products" class="btn-primary">Shop Now</a>
+      <a href="#pricing" class="btn-secondary">View Plans</a>
+    </div>
+    <div class="hero-stats">
+      <div>
+        <span class="stat-num">$284k</span>
+        <span class="stat-label">Revenue</span>
+      </div>
+      <div>
+        <span class="stat-num">12,800</span>
+        <span class="stat-label">Sales</span>
+      </div>
+      <div>
+        <span class="stat-num">4.97★</span>
+        <span class="stat-label">Rating</span>
+      </div>
+    </div>
+  </div>
+  <div class="hero-visual">
+    <div class="mini-product" onclick="openModal(products[0])">
+      <div class="mini-thumb" style="background:#fde8e1">🎨</div>
+      <div class="mini-product-info">
+        <div class="mini-product-name">UI Design Kit</div>
+        <div class="mini-product-cat">Figma Template</div>
+      </div>
+      <div class="mini-price">$49</div>
+    </div>
+    <div class="mini-product" onclick="openModal(products[1])">
+      <div class="mini-thumb" style="background:#e8f0ff">⚡</div>
+      <div class="mini-product-info">
+        <div class="mini-product-name">Dev Toolkit Pro</div>
+        <div class="mini-product-cat">Software Bundle</div>
+      </div>
+      <div class="mini-price">$89</div>
+    </div>
+    <div class="mini-product" onclick="openModal(products[2])">
+      <div class="mini-thumb" style="background:#e8f5ed">📚</div>
+      <div class="mini-product-info">
+        <div class="mini-product-name">Launch Masterclass</div>
+        <div class="mini-product-cat">Video Course</div>
+      </div>
+      <div class="mini-price">$129</div>
+    </div>
+  </div>
+</section>
+
+<!-- PRODUCTS -->
+<section class="section" id="products">
+  <div class="section-header">
+    <div class="section-label">Our Collection</div>
+    <h2 class="section-title">Handpicked digital goods</h2>
+  </div>
+  <div class="filter-bar">
+    <button class="filter-btn active" onclick="filterProducts('all', this)">All</button>
+    <button class="filter-btn" onclick="filterProducts('templates', this)">Templates</button>
+    <button class="filter-btn" onclick="filterProducts('courses', this)">Courses</button>
+    <button class="filter-btn" onclick="filterProducts('tools', this)">Tools</button>
+    <button class="filter-btn" onclick="filterProducts('assets', this)">Assets</button>
+  </div>
+  <div class="products-grid" id="products-grid"></div>
+</section>
+
+<!-- PRICING -->
+<section class="section" id="pricing">
+  <div class="section-header">
+    <div class="section-label">Subscription Plans</div>
+    <h2 class="section-title">Unlock everything with<br>RevenueCat</h2>
+  </div>
+  <div class="pricing-grid">
+    <div class="pricing-card">
+      <div class="plan-name">Starter</div>
+      <div class="plan-price"><sup>$</sup>9</div>
+      <div class="plan-period">per month</div>
+      <div class="plan-desc">Perfect for individuals getting started with digital products.</div>
+      <ul class="features-list">
+        <li class="feature-item"><div class="feature-icon">✓</div> 5 product downloads/mo</li>
+        <li class="feature-item"><div class="feature-icon">✓</div> Access to free library</li>
+        <li class="feature-item"><div class="feature-icon">✓</div> Email support</li>
+        <li class="feature-item"><div class="feature-icon">✓</div> RevenueCat sync</li>
+      </ul>
+      <button class="plan-btn" onclick="openSubscriptionModal('Starter', 9)">Get Starter</button>
+    </div>
+    <div class="pricing-card featured">
+      <div class="pricing-badge">Most Popular</div>
+      <div class="plan-name">Pro</div>
+      <div class="plan-price"><sup>$</sup>29</div>
+      <div class="plan-period">per month</div>
+      <div class="plan-desc">For creators and teams who need access to everything.</div>
+      <ul class="features-list">
+        <li class="feature-item"><div class="feature-icon">✓</div> Unlimited downloads</li>
+        <li class="feature-item"><div class="feature-icon">✓</div> Full premium library</li>
+        <li class="feature-item"><div class="feature-icon">✓</div> Priority support</li>
+        <li class="feature-item"><div class="feature-icon">✓</div> Early access releases</li>
+        <li class="feature-item"><div class="feature-icon">✓</div> Multi-device RevenueCat</li>
+      </ul>
+      <button class="plan-btn" onclick="openSubscriptionModal('Pro', 29)">Get Pro</button>
+    </div>
+    <div class="pricing-card">
+      <div class="plan-name">Team</div>
+      <div class="plan-price"><sup>$</sup>79</div>
+      <div class="plan-period">per month · up to 5 seats</div>
+      <div class="plan-desc">For studios and agencies building at scale.</div>
+      <ul class="features-list">
+        <li class="feature-item"><div class="feature-icon">✓</div> Everything in Pro</li>
+        <li class="feature-item"><div class="feature-icon">✓</div> Team collaboration tools</li>
+        <li class="feature-item"><div class="feature-icon">✓</div> Shared workspace</li>
+        <li class="feature-item"><div class="feature-icon">✓</div> Custom licensing</li>
+        <li class="feature-item"><div class="feature-icon">✓</div> API access</li>
+      </ul>
+      <button class="plan-btn" onclick="openSubscriptionModal('Team', 79)">Get Team</button>
+    </div>
+  </div>
+</section>
+
+<!-- REVENUECAT DASHBOARD -->
+<section class="rc-section" id="dashboard">
+  <div class="rc-inner">
+    <div class="rc-header">
+      <div class="rc-logo">RC</div>
+      <div>
+        <div class="rc-title">RevenueCat Dashboard</div>
+        <div class="rc-subtitle">Live subscription analytics · synced across all platforms</div>
+      </div>
+    </div>
+    <div class="rc-metrics">
+      <div class="rc-metric">
+        <div class="rc-metric-label">MRR</div>
+        <div class="rc-metric-value">$18.4k</div>
+        <div class="rc-metric-change">↑ +12.3% vs last month</div>
+      </div>
+      <div class="rc-metric">
+        <div class="rc-metric-label">Active Subs</div>
+        <div class="rc-metric-value">634</div>
+        <div class="rc-metric-change">↑ +47 new this week</div>
+      </div>
+      <div class="rc-metric">
+        <div class="rc-metric-label">Churn Rate</div>
+        <div class="rc-metric-value">2.1%</div>
+        <div class="rc-metric-change down">↑ +0.3% vs last month</div>
+      </div>
+      <div class="rc-metric">
+        <div class="rc-metric-label">LTV</div>
+        <div class="rc-metric-value">$94</div>
+        <div class="rc-metric-change">↑ +$8.2 avg</div>
+      </div>
+    </div>
+    <div class="rc-chart-row">
+      <div class="rc-chart-card">
+        <div class="rc-chart-title">Revenue — Last 12 Months</div>
+        <div class="bar-chart" id="bar-chart"></div>
+        <div style="display:flex;justify-content:space-between;margin-top:8px">
+          <span style="font-size:11px;color:rgba(250,249,246,0.3);font-family:var(--font-mono)">Jun '24</span>
+          <span style="font-size:11px;color:rgba(250,249,246,0.3);font-family:var(--font-mono)">May '25</span>
+        </div>
+      </div>
+      <div class="rc-chart-card">
+        <div class="rc-chart-title">Revenue by Platform</div>
+        <div class="platform-list">
+          <div class="platform-item">
+            <div class="platform-name">iOS</div>
+            <div class="platform-bar-wrap"><div class="platform-bar" style="width:62%"></div></div>
+            <div class="platform-pct">62%</div>
+          </div>
+          <div class="platform-item">
+            <div class="platform-name">Android</div>
+            <div class="platform-bar-wrap"><div class="platform-bar" style="width:24%"></div></div>
+            <div class="platform-pct">24%</div>
+          </div>
+          <div class="platform-item">
+            <div class="platform-name">Web</div>
+            <div class="platform-bar-wrap"><div class="platform-bar" style="width:14%"></div></div>
+            <div class="platform-pct">14%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div>© 2025 PIXEL Store · Built with Stripe &amp; RevenueCat</div>
+  <div class="footer-links">
+    <a href="#">Privacy</a>
+    <a href="#">Terms</a>
+    <a href="#">Support</a>
+  </div>
+</footer>
+
+<!-- CART FLOAT -->
+<button class="cart-float" id="cart-btn" onclick="openCartModal()">
+  🛒 View Cart
+  <span class="cart-count" id="cart-count">0</span>
+</button>
+
+<!-- PAYMENT MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Complete Purchase</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body" id="modal-body">
+      <!-- injected dynamically -->
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── PRODUCT DATA ────────────────────────
+const products = [
+  { id:1, name:'UI Design Kit', category:'templates', emoji:'🎨', bg:'#fde8e1', price:49, badge:'sale', badgeLabel:'Sale', desc:'500+ Figma components, 12 full-page layouts, and a complete design token system.', originalPrice:79 },
+  { id:2, name:'Dev Toolkit Pro', category:'tools', emoji:'⚡', bg:'#e8f0ff', price:89, badge:'new', badgeLabel:'New', desc:'VS Code snippets, CLI utilities, and Bash scripts to 10× your workflow speed.' },
+  { id:3, name:'Launch Masterclass', category:'courses', emoji:'📚', bg:'#e8f5ed', price:129, badge:null, desc:'9 hours of video content covering market research, landing pages, and growth loops.' },
+  { id:4, name:'Notion OS Templates', category:'templates', emoji:'📋', bg:'#fff8e8', price:29, badge:null, desc:'A complete second-brain system in Notion — projects, habits, finances, and content.' },
+  { id:5, name:'Icon Pack Vol.3', category:'assets', emoji:'✦', bg:'#f5e8ff', price:19, badge:'new', badgeLabel:'New', desc:'1,200 hand-drawn icons in SVG, PNG, and WebP. Perfect for apps and presentations.' },
+  { id:6, name:'SEO Growth Playbook', category:'courses', emoji:'📈', bg:'#e8faff', price:59, badge:null, desc:'A data-driven SEO framework used to grow traffic from 0 to 120k organic visitors.' },
+];
+
+let cart = [];
+let currentProduct = null;
+let stripe, cardElement;
+
+// ─── STRIPE INIT ─────────────────────────
+// Replace with your actual publishable key
+const STRIPE_KEY = 'pk_test_51...your_key_here';
+try { stripe = Stripe(STRIPE_KEY); } catch(e) { /* Stripe not available in demo */ }
+
+function initStripe() {
+  if (!stripe) return;
+  const elements = stripe.elements({ fonts: [{ family: 'Instrument Sans', src: 'url(https://fonts.gstatic.com/...)' }] });
+  const style = {
+    base: {
+      color: '#0d0c0a', fontFamily: '"Instrument Sans", sans-serif', fontSize: '15px',
+      '::placeholder': { color: '#c9c7c0' },
+    },
+    invalid: { color: '#c8401a' }
+  };
+  cardElement = elements.create('card', { style, hidePostalCode: false });
+  if (document.getElementById('card-element')) cardElement.mount('#card-element');
+}
+
+// ─── RENDER PRODUCTS ─────────────────────
+function renderProducts(filter = 'all') {
+  const grid = document.getElementById('products-grid');
+  const filtered = filter === 'all' ? products : products.filter(p => p.category === filter);
+  grid.innerHTML = filtered.map(p => `
+    <div class="product-card" onclick="openModal(${JSON.stringify(p).replace(/"/g,'&quot;')})">
+      <div class="product-thumb" style="background:${p.bg}">
+        ${p.badge ? `<div class="product-badge ${p.badge}">${p.badgeLabel}</div>` : ''}
+        <span>${p.emoji}</span>
+      </div>
+      <div class="product-body">
+        <div class="product-category">${p.category}</div>
+        <div class="product-name">${p.name}</div>
+        <div class="product-desc">${p.desc}</div>
+        <div class="product-footer">
+          <div class="product-price">
+            ${p.originalPrice ? `<span class="original">$${p.originalPrice}</span>` : ''}
+            $${p.price}
+          </div>
+          <button class="add-btn" onclick="event.stopPropagation();addToCart(${p.id})">Buy Now</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterProducts(category, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderProducts(category);
+}
+
+function scrollToProducts() {
+  document.getElementById('products').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ─── CART ────────────────────────────────
+function addToCart(id) {
+  const product = products.find(p => p.id === id);
+  if (!cart.find(p => p.id === id)) cart.push(product);
+  updateCartUI();
+  openModal(product);
+}
+
+function updateCartUI() {
+  const count = cart.length;
+  document.getElementById('cart-count').textContent = count;
+  const btn = document.getElementById('cart-btn');
+  if (count > 0) btn.classList.add('visible');
+  else btn.classList.remove('visible');
+}
+
+function openCartModal() {
+  if (cart.length === 0) return;
+  const total = cart.reduce((s,p) => s + p.price, 0);
+  openCheckoutModal({ name: `${cart.length} item${cart.length>1?'s':''}`, emoji:'🛒', bg:'#f3f0e8' }, total, true);
+}
+
+// ─── MODAL ───────────────────────────────
+function openModal(product) {
+  currentProduct = product;
+  openCheckoutModal(product, product.price, false);
+}
+
+function openSubscriptionModal(planName, price) {
+  openCheckoutModal({ name: planName + ' Plan', emoji:'⚡', bg:'#f5e8ff', isSubscription:true }, price, false, true);
+}
+
+function openCheckoutModal(product, total, isCart, isSub) {
+  document.getElementById('modal-title').textContent = isSub ? 'Start Subscription' : 'Complete Purchase';
+  const overlay = document.getElementById('modal-overlay');
+  document.getElementById('modal-body').innerHTML = buildCheckoutForm(product, total, isSub, isCart);
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  setTimeout(initStripe, 50);
+}
+
+function buildCheckoutForm(product, total, isSub, isCart) {
+  const rcNote = isSub ? `
+    <div class="rc-badge">
+      <div class="rc-dot"></div>
+      Managed by RevenueCat · cancel anytime · syncs to iOS, Android &amp; Web
+    </div>` : '';
+  return `
+    ${rcNote}
+    <div class="order-summary">
+      <div class="order-thumb" style="background:${product.bg||'#f3f0e8'}">${product.emoji}</div>
+      <div>
+        <div class="order-name">${product.name}</div>
+        <div class="order-type">${isSub ? 'Monthly subscription' : isCart ? 'Cart total' : 'One-time purchase'}</div>
+      </div>
+      <div class="order-price">$${total}</div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-field">
+        <label>First name</label>
+        <input type="text" id="fname" placeholder="Alex" />
+      </div>
+      <div class="form-field">
+        <label>Last name</label>
+        <input type="text" id="lname" placeholder="Johnson" />
+      </div>
+    </div>
+    <div class="form-field">
+      <label>Email address</label>
+      <input type="email" id="email" placeholder="alex@example.com" />
+    </div>
+
+    <div class="divider"><span>Payment details</span></div>
+
+    <div class="form-field">
+      <label>Card information</label>
+      <div class="card-icons">
+        <div class="card-icon visa">VISA</div>
+        <div class="card-icon mc">MC</div>
+        <div class="card-icon amex">AMEX</div>
+        <span style="font-size:11px;color:var(--ink-muted);font-family:var(--font-mono);margin-left:4px">and more</span>
+      </div>
+      <div id="card-element">
+        <!-- Stripe Elements mounts here -->
+        <div style="font-size:14px;color:var(--ink-muted);padding:2px 0">
+          4242 4242 4242 4242 · 12/28 · 123
+          <span style="float:right;font-size:11px;font-family:var(--font-mono);background:#fde8e1;color:#8f2d12;padding:2px 8px;border-radius:100px">Demo mode</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="payment-error" style="color:var(--accent);font-size:13px;margin-top:8px;display:none;"></div>
+
+    <button class="pay-btn" id="pay-btn" onclick="handlePayment(${total}, '${isSub}')">
+      <span class="lock">🔒</span>
+      ${isSub ? 'Start subscription' : 'Pay'} — $${total}${isSub ? '/mo' : ''}
+    </button>
+    <div class="secure-note">256-bit SSL · Powered by Stripe</div>
+  `;
+}
+
+async function handlePayment(total, isSub) {
+  const btn = document.getElementById('pay-btn');
+  const fname = document.getElementById('fname')?.value || '';
+  const lname = document.getElementById('lname')?.value || '';
+  const email = document.getElementById('email')?.value || '';
+
+  if (!fname || !email) {
+    showError('Please fill in your name and email.');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span style="display:inline-block;animation:spin 0.8s linear infinite">⟳</span> Processing…';
+  
+  // In production: create PaymentIntent on your server, confirm with Stripe.js
+  // Here we simulate the flow
+  await new Promise(r => setTimeout(r, 1800));
+
+  if (isSub === 'true') {
+    // RevenueCat subscription flow:
+    // 1. Create/get customer on RevenueCat
+    // 2. Use Stripe billing portal or RevenueCat's web billing
+    showSuccess(true, fname);
+  } else {
+    // One-time payment:
+    // stripe.confirmCardPayment(clientSecret, { payment_method: { card: cardElement } })
+    showSuccess(false, fname);
+  }
+}
+
+function showError(msg) {
+  const el = document.getElementById('payment-error');
+  if (el) { el.style.display='block'; el.textContent = msg; }
+  const btn = document.getElementById('pay-btn');
+  if (btn) { btn.disabled = false; btn.innerHTML = '🔒 Pay'; }
+}
+
+function showSuccess(isSub, name) {
+  cart = [];
+  updateCartUI();
+  document.getElementById('modal-title').textContent = 'Payment Successful';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="success-screen">
+      <div class="success-icon">🎉</div>
+      <div class="success-title">Thank you, ${name||'friend'}!</div>
+      <div class="success-desc">
+        ${isSub
+          ? 'Your subscription is active. RevenueCat has synced your entitlements across all your devices.'
+          : 'Your purchase is confirmed. A download link has been sent to your email.'
+        }
+      </div>
+      ${!isSub ? `<button class="download-btn" onclick="closeModal()">↓ Download Now</button>` : ''}
+      ${isSub ? `<p style="font-size:13px;color:var(--ink-muted);margin-top:12px;font-family:var(--font-mono)">Manage via RevenueCat dashboard</p>` : ''}
+    </div>
+  `;
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+
+// ─── BAR CHART ───────────────────────────
+function buildBarChart() {
+  const data = [4200, 5100, 4800, 6300, 7200, 8100, 9400, 11200, 12800, 15100, 16400, 18400];
+  const max = Math.max(...data);
+  const chart = document.getElementById('bar-chart');
+  if (!chart) return;
+  chart.innerHTML = data.map((v,i) => {
+    const h = Math.round((v / max) * 100);
+    const months = ['J','A','S','O','N','D','J','F','M','A','M','J'];
+    return `<div class="bar" title="${months[i]}: $${v.toLocaleString()}" style="height:${h}%"></div>`;
+  }).join('');
+}
+
+// ─── KEYFRAME FOR SPINNER ─────────────────
+const style = document.createElement('style');
+style.textContent = '@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}';
+document.head.appendChild(style);
+
+// ─── INIT ────────────────────────────────
+renderProducts();
+buildBarChart();
+</script>
+</body>
+</html>
